@@ -9,7 +9,7 @@ const msg=document.getElementById('message'),count=document.getElementById('coun
 const TILE=16,W=20,H=15;
 const furniture=[{id:'shelf',x:2,y:3,w:3,h:2,label:'本棚',snack:'🍪 クッキー',text:'本のうしろから、あま〜いクッキーを見つけた！'},{id:'chest',x:14,y:9,w:3,h:2,label:'宝箱',snack:'🍬 キャンディ',text:'宝箱の中にキラキラのキャンディ！'},{id:'drawer',x:13,y:3,w:3,h:2,label:'引き出し',snack:'🧁 カップケーキ',text:'引き出しの奥にふわふわカップケーキ！'}];
 const door={x:9,y:1,w:2,h:1},friends=[{id:'scarecrow',x:5,y:10,label:'くまかかし',line:'「おやつを探すの、手伝うよ〜！」'},{id:'ghost',x:7,y:10,label:'くまおばけ',line:'「3つ集まったら扉が開くみたい！」'}];
-let currentScreen='room',chestPuzzleCleared=false,selectedTile=null,tiles=[],pzSolved=false,pzSource=null;let player,found,won,steps=0,frame=0,dir='down',lastMove=0,held=null,lastHeldMove=0;
+let currentScreen='room',chestPuzzleCleared=false,selectedTile=null,tiles=[],pzSolved=false,pzSource=null,pzSession=0;let player,found,won,steps=0,frame=0,dir='down',lastMove=0,held=null,lastHeldMove=0;
 const dirs={down:[0,1,0],left:[-1,0,1],right:[1,0,2],up:[0,-1,3]};
 function say(s){msg.innerHTML=s}
 function reset(){closePuzzle();chestPuzzleCleared=false;player={x:10,y:10};found=new Set();won=false;steps=0;frame=0;dir='down';held=null;lastMove=0;count.textContent='0 / 3';status.textContent='🚪 扉は閉まっている';say('<strong>くまドラ：</strong>「おやつのにおいがする！ 3つ見つけて、みんなでお外へ行こう！」');draw()}
@@ -32,13 +32,13 @@ g.fillStyle='#e8892f';g.beginPath();g.ellipse(144,262,30,20,0,0,7);g.fill();g.fi
 ['scarecrow','ghost','vampire'].forEach((n,i)=>{const im=sprites[n];if(im&&im.complete&&im.naturalWidth)g.drawImage(im,32,0,32,32,i*96,110,96,96)});return c}
 function pzDraw(){pzc.imageSmoothingEnabled=false;pzc.fillStyle='#1a1625';pzc.fillRect(0,0,PS,PS);tiles.forEach((t,i)=>{const dx=i%3*TS,dy=Math.floor(i/3)*TS;pzc.drawImage(pzSource,t%3*TS,Math.floor(t/3)*TS,TS,TS,dx,dy,TS,TS);pzc.strokeStyle='#d3a766';pzc.lineWidth=2;pzc.strokeRect(dx+1,dy+1,TS-2,TS-2);if(i===selectedTile){pzc.fillStyle='rgba(255,224,120,.3)';pzc.fillRect(dx,dy,TS,TS);pzc.strokeStyle='#ffe066';pzc.lineWidth=6;pzc.strokeRect(dx+3,dy+3,TS-6,TS-6)}})}
 function pzShuffle(){do{tiles=pzDone.slice();for(let i=8;i>0;i--){const j=Math.floor(Math.random()*(i+1));[tiles[i],tiles[j]]=[tiles[j],tiles[i]]}}while(tiles.every((t,i)=>t===pzDone[i]));selectedTile=null;pzSolved=false;pzDraw()}
-function openPuzzle(){currentScreen='puzzle';held=null;pzSource=makePuzzleImage();document.getElementById('puzzle').classList.add('on');canvas.style.display='none';document.querySelector('.buttons').style.display='none';document.getElementById('pzShuffle').disabled=false;pzShuffle()}
-function closePuzzle(){currentScreen='room';selectedTile=null;document.getElementById('puzzle').classList.remove('on');canvas.style.display='';document.querySelector('.buttons').style.display=''}
+function openPuzzle(){pzSession++;currentScreen='puzzle';held=null;pzSource=makePuzzleImage();document.getElementById('puzzle').classList.add('on');canvas.style.display='none';document.querySelector('.buttons').style.display='none';document.getElementById('pzShuffle').disabled=false;pzShuffle()}
+function closePuzzle(){pzSession++;currentScreen='room';selectedTile=null;document.getElementById('puzzle').classList.remove('on');canvas.style.display='';document.querySelector('.buttons').style.display=''}
 function pzTap(e){e.preventDefault();if(currentScreen!=='puzzle'||pzSolved)return;const r=pz.getBoundingClientRect(),c=Math.floor((e.clientX-r.left)/r.width*3),rw=Math.floor((e.clientY-r.top)/r.height*3);if(c<0||c>2||rw<0||rw>2)return;const i=rw*3+c;
 if(selectedTile===null){selectedTile=i}else if(selectedTile===i){selectedTile=null}else{[tiles[selectedTile],tiles[i]]=[tiles[i],tiles[selectedTile]];selectedTile=null;if(tiles.every((t,k)=>t===pzDone[k])){pzSolved=true;pzDraw();pzClear();return}}pzDraw()}
-function pzClear(){document.getElementById('pzShuffle').disabled=true;say('<strong>やった！ えが そろった！</strong>');setTimeout(()=>{if(currentScreen!=='puzzle')return;closePuzzle();if(!chestPuzzleCleared){chestPuzzleCleared=true;found.add('chest');count.textContent=`${found.size} / 3`;say(`<strong>✨ とくせいおやつ を てにいれた！</strong><br>やった！ えが そろった！${found.size===3?'<br><strong>カチャッ！ 扉のカギが開いた！ 🚪</strong>':''}`);if(found.size===3)status.textContent='🔓 扉が開いた！'}draw()},900)}
+function pzClear(){document.getElementById('pzShuffle').disabled=true;const sid=pzSession;say('<strong>やった！ えが そろった！</strong>');setTimeout(()=>{if(currentScreen!=='puzzle'||sid!==pzSession)return;closePuzzle();if(!chestPuzzleCleared){chestPuzzleCleared=true;found.add('chest');count.textContent=`${found.size} / 3`;say(`<strong>✨ とくせいおやつ を てにいれた！</strong><br>やった！ えが そろった！${found.size===3?'<br><strong>カチャッ！ 扉のカギが開いた！ 🚪</strong>':''}`);if(found.size===3)status.textContent='🔓 扉が開いた！'}draw()},900)}
 pz.addEventListener('pointerdown',pzTap);pz.addEventListener('contextmenu',e=>e.preventDefault());
-document.getElementById('pzBack').addEventListener('click',()=>{if(currentScreen!=='puzzle')return;closePuzzle();say('<strong>くまドラ：</strong>「また あとで やってみよう！」');draw()});
+document.getElementById('pzBack').addEventListener('click',()=>{if(currentScreen!=='puzzle'||pzSolved)return;closePuzzle();say('<strong>くまドラ：</strong>「また あとで やってみよう！」');draw()});
 document.getElementById('pzShuffle').addEventListener('click',()=>{if(currentScreen==='puzzle'&&!pzSolved)pzShuffle()});
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
 function txt(s,x,y,c='#fff0d2',size=8){ctx.font=`bold ${size}px sans-serif`;ctx.fillStyle='#2c2132';ctx.fillText(s,x+1,y+1);ctx.fillStyle=c;ctx.fillText(s,x,y)}
@@ -74,7 +74,7 @@ const [dx,dy]=dirs[dir];rect(player.x*16+7+dx*10,player.y*16+2+dy*8,3,3,'#ffdb8a
 rect(16,209,288,14,'#372c43');txt('くまドラを動かして おやつを 3つ集めよう！',27,219,'#fce5ba',8);
 if(won){rect(36,79,248,73,'#241d32');rect(40,83,240,65,'#68465b');rect(44,87,232,57,'#30283a');txt('★ だっしゅつ せいこう！ ★',67,109,'#ffe08b',13);txt('3びきで おやつパーティー！',75,128,'#fff3d2',10)}
 }
-for(const im of Object.values(sprites))im.onload=()=>draw();
+for(const im of Object.values(sprites))im.onload=()=>{draw();if(currentScreen==='puzzle'){pzSource=makePuzzleImage();pzDraw()}};
 const keyDir={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',a:'left',s:'down',d:'right',W:'up',A:'left',S:'down',D:'right'};
 document.addEventListener('keydown',e=>{if(currentScreen!=='room')return;if(keyDir[e.key]){e.preventDefault();if(!e.repeat)move(keyDir[e.key]);held=keyDir[e.key]}else if([' ','Enter','e','E'].includes(e.key)){e.preventDefault();if(!e.repeat)interact()}});document.addEventListener('keyup',e=>{if(keyDir[e.key]&&held===keyDir[e.key])held=null});window.addEventListener('blur',()=>held=null);
 let pointerHeld=null;document.querySelectorAll('[data-dir]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);pointerHeld=b.dataset.dir;held=pointerHeld;lastHeldMove=performance.now();move(pointerHeld);b.classList.add('held')});const stop=e=>{pointerHeld=null;held=null;b.classList.remove('held')};b.addEventListener('pointerup',stop);b.addEventListener('pointercancel',stop);b.addEventListener('lostpointercapture',stop)});
