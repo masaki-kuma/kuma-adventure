@@ -1,0 +1,20 @@
+[
+  {
+    "height": 244,
+    "file": "assets/ui/title.png",
+    "name": "title",
+    "width": 942
+  },
+  {
+    "height": 431,
+    "file": "assets/ui/cheering-bears.png",
+    "name": "cheering-bears",
+    "width": 521
+  },
+  {
+    "height": 335,
+    "file": "assets/ui/reward-snacks.png",
+    "name": "reward-snacks",
+    "width": 404
+  }
+]
